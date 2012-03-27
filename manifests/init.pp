@@ -116,7 +116,6 @@ define sqlexec($username, $password="", $database, $sql, $sqlcheck) {
   }  
   if $password == "" {
     exec{ "psql -h localhost --username=${username} $database -f /tmp/puppetsql-$name  >> /tmp/puppetsql-$name.sql.log 2>&1 && /bin/sleep 5":
-      path        => $path,
       timeout     => 600,
       unless      => "psql -U $username $database -c $sqlcheck",
       require =>  [User['postgres'],Service[postgresql],File["/tmp/puppetsql-$name"]],
@@ -124,7 +123,6 @@ define sqlexec($username, $password="", $database, $sql, $sqlcheck) {
   } else {
     exec{ "psql -h localhost --username=${username} $database -f /tmp/puppetsql-$name  >> /tmp/puppetsql-$name.sql.log 2>&1 && /bin/sleep 5":
       environment => "PGPASSWORD=${password}",
-      path        => $path,
       timeout     => 600,
       unless      => "psql -U $username $database -c $sqlcheck",
       require =>  [User['postgres'],Service[postgresql],File["/tmp/puppetsql-$name"]],
