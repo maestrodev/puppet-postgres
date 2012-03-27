@@ -149,7 +149,7 @@ define postgres::user($passwd) {
   postgres::createuser{ $name: passwd => $passwd } ->
   # if user exists, ensure password is correctly set (useful for updates)
   sqlexec{ "updateuser-${name}":
-    password => $postgres::postgres_password,
+    password => $postgres::password,
     username => "postgres",
     database => "postgres",
     sql      => "ALTER ROLE ${name} WITH PASSWORD '${passwd}';",
