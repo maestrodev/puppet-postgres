@@ -24,6 +24,23 @@ class postgres ($version = $postgres_version, $password = $postgres_password,
   $postgres_client = "postgresql${postgres::version}"
   $postgres_server = "postgresql${postgres::version}-server"
 
+  if ( $postgres::version != "" and $postgres::version >= "90") {
+    case $operatingsystem {
+      /(RedHat|CentOS|Fedora)/: {         
+          yumrepo { "postgresql90":
+            baseurl     => 'http://yum.postgresql.org/9.0/redhat/rhel-$releasever-$basearch',
+            descr       => "Postgresql 9.0 Yum Repo",
+            enabled     => 1,
+            gpgcheck    => 0,
+            before      => Package[$postgres_client, $postgres_server]
+          }
+      }
+      default: { 
+
+      } 
+    } # case 
+  }
+
   package { [$postgres_client, $postgres_server]: 
     ensure => installed,
   }
@@ -48,17 +65,22 @@ class postgres ($version = $postgres_version, $password = $postgres_password,
 
 # Initialize the database with the postgres_password password.
 define postgres::initdb() {
+  if ( $postgres::version != "" and $postgres::version >= "90" ) {
+    $init_cmd = "/usr/pgsql-9.0/bin/initdb"
+  } else {
+    $init_cmd = "/usr/bin/initdb"
+  }
   if $postgres::password == "" {
     exec {
         "InitDB":
-          command => "/bin/chown postgres.postgres /var/lib/pgsql && /bin/su postgres -c \"/usr/bin/initdb $postgres::datadir -E UTF8\"",
+          command => "/bin/chown postgres.postgres /var/lib/pgsql && /bin/su postgres -c \"$init_cmd $postgres::datadir -E UTF8\"",
           require =>  [User['postgres'],Package["postgresql${postgres::version}-server"]],
           unless => "/usr/bin/test -e $postgres::datadir/PG_VERSION",
     }
   } else {
     exec {
         "InitDB":
-          command => "/bin/chown postgres.postgres /var/lib/pgsql && echo \"${postgres::password}\" > /tmp/ps && /bin/su  postgres -c \"/usr/bin/initdb $postgres::datadir --auth='password' --pwfile=/tmp/ps -E UTF8 \" && rm -rf /tmp/ps",
+          command => "/bin/chown postgres.postgres /var/lib/pgsql && echo \"${postgres::password}\" > /tmp/ps && /bin/su  postgres -c \"$init_cmd $postgres::datadir --auth='password' --pwfile=/tmp/ps -E UTF8 \" && rm -rf /tmp/ps",
           require =>  [User['postgres'],Package["postgresql${postgres::version}-server"]],
           unless => "/usr/bin/test -e $postgres::datadir/PG_VERSION ",
     }
